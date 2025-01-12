@@ -66,6 +66,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
   bool isRecording = false;
   double progress = 0.0;
   Timer? timer;
+  int currentCameraIndex = 0;
 
   @override
   void initState() {
@@ -74,9 +75,16 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
     initializeCamera();
   }
 
+  Future<void> switchCamera() async {
+    currentCameraIndex = (currentCameraIndex + 1) % (_cameras.length);
+    await controller?.dispose();
+    initializeCamera();
+  }
+
   Future<void> initializeCamera() async {
     _cameras = await availableCameras();
-    controller = CameraController(_cameras[0], ResolutionPreset.high);
+    controller =
+        CameraController(_cameras[currentCameraIndex], ResolutionPreset.high);
 
     await controller?.initialize();
     if (mounted) {
@@ -295,7 +303,9 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
                       child: Column(
                         children: [
                           IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              switchCamera();
+                            },
                             icon: const Icon(Icons.recycling,
                                 size: 20, color: Colors.white),
                           ),

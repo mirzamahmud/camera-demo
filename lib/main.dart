@@ -37,7 +37,7 @@ void _logError(String code, String? message) {
 }
 
 class _CameraExampleHomeState extends State<CameraExampleHome>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   CameraController? controller;
   XFile? imageFile;
   XFile? videoFile;
@@ -57,20 +57,32 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
   double maxAvailableZoom = 1.0;
   double currentScale = 1.0;
   double baseScale = 1.0;
+  late AnimationController progressController;
 
   // Counting pointers (number of user fingers on screen)
   int pointers = 0;
   bool isShowSpeed = false;
+  bool isPhoto = false;
+  bool isFifteenSec = false;
+  bool isSixtySec = false;
+  bool isRecording = false;
+  double progress = 0.0;
+  Timer? timer;
 
   @override
   void initState() {
     super.initState();
     initializeCamera();
+
+    progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    );
   }
 
   Future<void> initializeCamera() async {
     _cameras = await availableCameras();
-    controller = CameraController(_cameras[1], ResolutionPreset.high);
+    controller = CameraController(_cameras[0], ResolutionPreset.high);
 
     await controller?.initialize();
     if (mounted) {
@@ -82,6 +94,93 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
   void dispose() {
     super.dispose();
     controller?.dispose();
+    timer?.cancel();
+  }
+
+  // ========================== start video recording ==========================
+  Future<void> _startVideoRecording() async {
+    try {
+      await controller?.startVideoRecording();
+      setState(() {
+        isRecording = true;
+        progress = 0.0;
+      });
+
+      // Start progress timer for 15 seconds
+      timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        setState(() {
+          progress += 0.1 / 15; // Increment progress
+          if (progress >= 1.0) {
+            progress = 1.0;
+            timer.cancel();
+          }
+        });
+      });
+
+      // Stop recording after 15 seconds
+      Future.delayed(const Duration(seconds: 15), () async {
+        if (isRecording) {
+          await _stopVideoRecording();
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> _startSixtySecVideoRecording() async {
+    try {
+      await controller?.startVideoRecording();
+      setState(() {
+        isRecording = true;
+        progress = 0.0;
+      });
+
+      // Start progress timer for 15 seconds
+      timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        setState(() {
+          progress += 0.1 / 60; // Increment progress
+          if (progress >= 1.0) {
+            progress = 1.0;
+            timer.cancel();
+          }
+        });
+      });
+
+      // Stop recording after 15 seconds
+      Future.delayed(const Duration(seconds: 60), () async {
+        if (isRecording) {
+          await _stopVideoRecording();
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> _stopVideoRecording() async {
+    try {
+      videoFile = await controller?.stopVideoRecording();
+      setState(() {
+        isRecording = false;
+        progress = 0.0;
+        timer?.cancel();
+      });
+    } catch (e) {}
+  }
+
+  // =============================== capture photo ================================
+  Future<void> capturePhoto() async {
+    if (controller!.value.isInitialized) {
+      try {
+        final image = await controller?.takePicture();
+        setState(() {
+          imageFile = image;
+        });
+      } catch (e) {
+        debugPrint(e.toString());
+      }
+    }
   }
 
   @override
@@ -222,7 +321,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
             width: MediaQuery.of(context).size.width,
             alignment: Alignment.center,
             padding: const EdgeInsetsDirectional.symmetric(
-              vertical: 12,
+              vertical: 16,
             ),
             decoration: const BoxDecoration(color: Colors.black54),
             child: Column(
@@ -233,47 +332,103 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     TextButton(
-                        onPressed: () {},
-                        child: const Text(
+                        onPressed: () {
+                          setState(() {
+                            isSixtySec = true;
+                          });
+                          if (isSixtySec) {
+                            isFifteenSec = false;
+                            isPhoto = false;
+                          }
+                        },
+                        child: Text(
                           '60 SEC',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          style: isSixtySec
+                              ? const TextStyle(
+                                  color: Colors.amber, fontSize: 16)
+                              : const TextStyle(
+                                  color: Colors.white, fontSize: 16),
                         )),
                     TextButton(
-                        onPressed: () {},
-                        child: const Text(
+                        onPressed: () {
+                          setState(() {
+                            isFifteenSec = true;
+                          });
+                          if (isFifteenSec) {
+                            isSixtySec = false;
+                            isPhoto = false;
+                          }
+                        },
+                        child: Text(
                           '15 SEC',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.amber, fontSize: 16),
+                          style: isFifteenSec
+                              ? const TextStyle(
+                                  color: Colors.amber, fontSize: 16)
+                              : const TextStyle(
+                                  color: Colors.white, fontSize: 16),
                         )),
                     TextButton(
-                        onPressed: () {},
-                        child: const Text(
+                        onPressed: () {
+                          setState(() {
+                            isPhoto = true;
+                          });
+                          if (isPhoto) {
+                            isSixtySec = false;
+                            isFifteenSec = false;
+                          }
+                        },
+                        child: Text(
                           'PHOTO',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          style: isPhoto
+                              ? const TextStyle(
+                                  color: Colors.amber, fontSize: 16)
+                              : const TextStyle(
+                                  color: Colors.white, fontSize: 16),
                         ))
                   ],
                 ),
                 const SizedBox(height: 20),
                 // ================= capture button ============================
-                SizedBox(
-                  child: CircularPercentIndicator(
-                    radius: 40.0,
-                    lineWidth: 5.0,
-                    percent: 0.15,
-                    progressColor: Colors.red,
-                    center: GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        height: 56,
-                        width: 56,
-                        decoration: const BoxDecoration(
-                            color: Colors.cyan, shape: BoxShape.circle),
-                      ),
-                    ),
-                  ),
-                )
+                isPhoto
+                    ? GestureDetector(
+                        onTap: () {
+                          capturePhoto();
+                        },
+                        child: Container(
+                          height: 64,
+                          width: 64,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.white, width: 4)),
+                        ),
+                      )
+                    : SizedBox(
+                        child: CircularPercentIndicator(
+                          radius: 40.0,
+                          lineWidth: 5.0,
+                          percent: progress,
+                          progressColor: Colors.red,
+                          center: GestureDetector(
+                            onTap: () async {
+                              if (isFifteenSec) {
+                                await _startVideoRecording();
+                              } else {
+                                await _startSixtySecVideoRecording();
+                              }
+                            },
+                            child: Container(
+                              height: 56,
+                              width: 56,
+                              decoration: const BoxDecoration(
+                                  color: Colors.cyan, shape: BoxShape.circle),
+                            ),
+                          ),
+                        ),
+                      )
               ],
             ),
           ),
@@ -281,40 +436,6 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
       ),
     );
   }
-
-  // /// Display the preview from the camera (or a message if the preview is not available).
-  // Widget _cameraPreviewWidget() {
-  //   final CameraController? cameraController = controller;
-
-  //   if (cameraController == null || !cameraController.value.isInitialized) {
-  //     return const Text(
-  //       'Tap a camera',
-  //       style: TextStyle(
-  //         color: Colors.white,
-  //         fontSize: 24.0,
-  //         fontWeight: FontWeight.w900,
-  //       ),
-  //     );
-  //   } else {
-  //     return Listener(
-  //       onPointerDown: (_) => _pointers++,
-  //       onPointerUp: (_) => _pointers--,
-  //       child: CameraPreview(
-  //         controller!,
-  //         child: LayoutBuilder(
-  //             builder: (BuildContext context, BoxConstraints constraints) {
-  //           return GestureDetector(
-  //             behavior: HitTestBehavior.opaque,
-  //             onScaleStart: _handleScaleStart,
-  //             onScaleUpdate: _handleScaleUpdate,
-  //             onTapDown: (TapDownDetails details) =>
-  //                 onViewFinderTap(details, constraints),
-  //           );
-  //         }),
-  //       ),
-  //     );
-  //   }
-  // }
 
   // void _handleScaleStart(ScaleStartDetails details) {
   //   _baseScale = _currentScale;

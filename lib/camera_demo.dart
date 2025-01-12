@@ -1,4 +1,4 @@
-import 'package:camera_demo/camera_screen.dart';
+import 'package:camera_demo/screens/camera_screen.dart';
 import 'package:flutter/material.dart';
 
 class CameraDemo extends StatelessWidget {

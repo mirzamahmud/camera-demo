@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:camera_demo/video_play_screen.dart';
+import 'package:camera_demo/screens/video_play_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
@@ -280,19 +281,42 @@ class _CameraScreenState extends State<CameraScreen> {
                                 : const Icon(Icons.flash_off_outlined,
                                     size: 20, color: Colors.white),
                           ),
-                          const SizedBox(height: 8),
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                isShowSpeed = !isShowSpeed;
-                              });
-                            },
-                            icon: isShowSpeed
-                                ? const Icon(Icons.speed_outlined,
-                                    size: 20, color: Colors.teal)
-                                : const Icon(Icons.speed_outlined,
-                                    size: 20, color: Colors.white),
-                          )
+                          isPhoto
+                              ? const SizedBox()
+                              : const SizedBox(height: 8),
+                          isPhoto
+                              ? const SizedBox()
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          isShowSpeed = !isShowSpeed;
+                                        });
+                                      },
+                                      icon: selectedVideoSpeed != -1
+                                          ? const Icon(Icons.speed_outlined,
+                                              size: 20, color: Colors.teal)
+                                          : const Icon(Icons.speed_outlined,
+                                              size: 20, color: Colors.white),
+                                    ),
+                                    selectedVideoSpeed == -1
+                                        ? const SizedBox()
+                                        : const SizedBox(height: 0),
+                                    selectedVideoSpeed == -1
+                                        ? const SizedBox()
+                                        : Text(
+                                            '${selectedVideoSpeed}x',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                                color: Colors.teal,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w400),
+                                          )
+                                  ],
+                                )
                         ],
                       ),
                     ),
@@ -380,18 +404,54 @@ class _CameraScreenState extends State<CameraScreen> {
                 const SizedBox(height: 20),
                 // ================= capture button ============================
                 isPhoto
-                    ? GestureDetector(
-                        onTap: () {
-                          capturePhoto();
-                        },
-                        child: Container(
-                          height: 64,
-                          width: 64,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 4)),
-                        ),
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Spacer(flex: 1),
+                          Expanded(
+                              flex: 2,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 32),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        capturePhoto();
+                                      },
+                                      child: Container(
+                                        height: 64,
+                                        width: 64,
+                                        decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                                color: Colors.white, width: 4)),
+                                      ),
+                                    ),
+                                  ),
+                                  imageFile == null
+                                      ? const SizedBox()
+                                      : const SizedBox(width: 32),
+                                  imageFile == null
+                                      ? const SizedBox()
+                                      : Container(
+                                          height: 60,
+                                          width: 60,
+                                          margin:
+                                              const EdgeInsetsDirectional.only(
+                                                  end: 16),
+                                          decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              image: DecorationImage(
+                                                  image: FileImage(
+                                                      File(imageFile!.path)),
+                                                  fit: BoxFit.cover)),
+                                        )
+                                ],
+                              ))
+                        ],
                       )
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -424,17 +484,28 @@ class _CameraScreenState extends State<CameraScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          IconButton(
-                              onPressed: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => VideoPlayScreen(
-                                            videoSpeed: selectedVideoSpeed,
-                                            videoSrc: videoFile?.path ?? '')));
-                              },
-                              icon: const Icon(Icons.done,
-                                  size: 24, color: Colors.white))
+                          videoFile == null
+                              ? const SizedBox()
+                              : IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) => VideoPlayScreen(
+                                                videoSpeed: selectedVideoSpeed,
+                                                videoSrc:
+                                                    videoFile?.path ?? '')));
+                                  },
+                                  icon: Container(
+                                    height: 24,
+                                    width: 24,
+                                    alignment: Alignment.center,
+                                    decoration: const BoxDecoration(
+                                        color: Colors.teal,
+                                        shape: BoxShape.circle),
+                                    child: const Icon(Icons.done,
+                                        size: 16, color: Colors.white),
+                                  ))
                         ],
                       )
               ],

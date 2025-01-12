@@ -37,6 +37,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   camera: ^0.11.0+2
   video_player: ^2.9.2
+  percent_indicator: ^4.2.4
+  get: ^4.6.6
 
 dev_dependencies:
   flutter_test:

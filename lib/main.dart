@@ -1,8 +1,72 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:video_player/video_player.dart';
+
+class MyWidget extends StatefulWidget {
+  final double videoSpeed;
+  final String videoSrc;
+  const MyWidget({required this.videoSpeed, required this.videoSrc, super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  VideoPlayerController? videoPlayerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideoPlayer();
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    videoPlayerController = VideoPlayerController.file(
+      File(widget.videoSrc),
+    );
+
+    await videoPlayerController?.initialize();
+    videoPlayerController?.setLooping(true); // Optional: Loop the video
+    setState(() {});
+    videoPlayerController?.play();
+
+    videoPlayerController?.setPlaybackSpeed(widget.videoSpeed);
+  }
+
+  @override
+  void dispose() {
+    videoPlayerController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Video Player')),
+        body: videoPlayerController?.value.isInitialized ?? false
+            ? Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: videoPlayerController!.value.aspectRatio,
+                    child: VideoPlayer(videoPlayerController!),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Current Speed: ${widget.videoSpeed}x",
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              )
+            : const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
 
 /// Camera example home widget.
 class CameraExampleHome extends StatefulWidget {
@@ -25,40 +89,12 @@ IconData getCameraLensIcon(CameraLensDirection direction) {
     case CameraLensDirection.external:
       return Icons.camera;
   }
-  // This enum is from a different package, so a new value could be added at
-  // any time. The example should keep working if that happens.
-  // ignore: dead_code
-  return Icons.camera;
-}
-
-void _logError(String code, String? message) {
-  // ignore: avoid_print
-  print('Error: $code${message == null ? '' : '\nError Message: $message'}');
 }
 
 class _CameraExampleHomeState extends State<CameraExampleHome> {
   CameraController? controller;
   XFile? imageFile;
   XFile? videoFile;
-  VideoPlayerController? videoController;
-  VoidCallback? videoPlayerListener;
-  bool enableAudio = true;
-  double minAvailableExposureOffset = 0.0;
-  double maxAvailableExposureOffset = 0.0;
-  double currentExposureOffset = 0.0;
-  late AnimationController flashModeControlRowAnimationController;
-  late Animation<double> flashModeControlRowAnimation;
-  late AnimationController exposureModeControlRowAnimationController;
-  late Animation<double> exposureModeControlRowAnimation;
-  late AnimationController focusModeControlRowAnimationController;
-  late Animation<double> focusModeControlRowAnimation;
-  double minAvailableZoom = 1.0;
-  double maxAvailableZoom = 1.0;
-  double currentScale = 1.0;
-  double baseScale = 1.0;
-
-  // Counting pointers (number of user fingers on screen)
-  int pointers = 0;
   bool isShowSpeed = false;
   bool isPhoto = false;
   bool isFifteenSec = false;
@@ -67,6 +103,9 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
   double progress = 0.0;
   Timer? timer;
   int currentCameraIndex = 0;
+
+  List<double> videoSpeed = [2.0, 1.5, 1, 0.5, 0.25];
+  double selectedVideoSpeed = -1;
 
   @override
   void initState() {
@@ -171,7 +210,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
     } catch (e) {}
   }
 
-  // =============================== capture photo ================================
+  // =============================== capture photo =============================
   Future<void> capturePhoto() async {
     if (controller!.value.isInitialized) {
       try {
@@ -252,42 +291,26 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
                                     color: Colors.black45,
                                     borderRadius: BorderRadius.circular(8)),
                                 child: Column(
-                                  children: [
-                                    TextButton(
-                                        onPressed: () {},
-                                        child: const Text('2x',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white))),
-                                    const SizedBox(height: 4),
-                                    TextButton(
-                                        onPressed: () {},
-                                        child: const Text('1.5x',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white))),
-                                    const SizedBox(height: 4),
-                                    TextButton(
-                                        onPressed: () {},
-                                        child: const Text('Normal',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white))),
-                                    const SizedBox(height: 4),
-                                    TextButton(
-                                        onPressed: () {},
-                                        child: const Text('0.5x',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white))),
-                                    const SizedBox(height: 4),
-                                    TextButton(
-                                        onPressed: () {},
-                                        child: const Text('0.25x',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white))),
-                                  ],
+                                  children:
+                                      List.generate(videoSpeed.length, (index) {
+                                    final speed = videoSpeed[index];
+                                    return TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            selectedVideoSpeed = speed;
+                                            isShowSpeed = false;
+                                          });
+                                        },
+                                        child: speed == 1.0
+                                            ? const Text('Normal',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                    color: Colors.white))
+                                            : Text('${speed}x',
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                    color: Colors.white)));
+                                  }),
                                 ),
                               ),
                               const SizedBox(width: 8)
@@ -433,28 +456,49 @@ class _CameraExampleHomeState extends State<CameraExampleHome> {
                                   Border.all(color: Colors.white, width: 4)),
                         ),
                       )
-                    : SizedBox(
-                        child: CircularPercentIndicator(
-                          radius: 40.0,
-                          lineWidth: 5.0,
-                          percent: progress,
-                          progressColor: Colors.red,
-                          center: GestureDetector(
-                            onTap: () async {
-                              if (isFifteenSec) {
-                                await _startVideoRecording();
-                              } else {
-                                await _startSixtySecVideoRecording();
-                              }
-                            },
-                            child: Container(
-                              height: 56,
-                              width: 56,
-                              decoration: const BoxDecoration(
-                                  color: Colors.cyan, shape: BoxShape.circle),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 50),
+                            child: SizedBox(
+                              child: CircularPercentIndicator(
+                                radius: 40.0,
+                                lineWidth: 5.0,
+                                percent: progress,
+                                progressColor: Colors.red,
+                                center: GestureDetector(
+                                  onTap: () async {
+                                    if (isFifteenSec) {
+                                      await _startVideoRecording();
+                                    } else {
+                                      await _startSixtySecVideoRecording();
+                                    }
+                                  },
+                                  child: Container(
+                                    height: 56,
+                                    width: 56,
+                                    decoration: const BoxDecoration(
+                                        color: Colors.cyan,
+                                        shape: BoxShape.circle),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => MyWidget(
+                                            videoSpeed: selectedVideoSpeed,
+                                            videoSrc: videoFile?.path ?? '')));
+                              },
+                              icon: const Icon(Icons.done,
+                                  size: 24, color: Colors.white))
+                        ],
                       )
               ],
             ),
@@ -480,12 +524,7 @@ class CameraApp extends StatelessWidget {
 List<CameraDescription> _cameras = <CameraDescription>[];
 
 Future<void> main() async {
-  // Fetch the available cameras before initializing the app.
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    _cameras = await availableCameras();
-  } on CameraException catch (e) {
-    _logError(e.code, e.description);
-  }
+  WidgetsFlutterBinding.ensureInitialized();
+  _cameras = await availableCameras();
   runApp(const CameraApp());
 }

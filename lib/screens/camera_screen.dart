@@ -209,7 +209,12 @@ class _CameraScreenState extends State<CameraScreen> {
             Column(
               children: [
                 Expanded(
-                  child: CameraPreview(controller!),
+                  child: Transform.rotate(
+                      angle: MediaQuery.of(context).orientation ==
+                              Orientation.landscape
+                          ? 0
+                          : (-90 * 3.1415926535897932 / 180),
+                      child: CameraPreview(controller!)),
                 ),
               ],
             ),

@@ -34,11 +34,57 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  camera: ^0.11.0+2
+  carousel_slider: ^4.2.1
+  chewie: ^1.8.1
+  connectivity_plus: ^5.0.2
+  cupertino_icons: ^1.0.2
+  dio: ^5.4.1
+  dotted_border: ^2.1.0
+  dropdown_search: ^5.0.6
+  easy_draggable: ^0.0.2
+  emoji_picker_flutter: ^2.2.0
+  cached_network_image: ^3.3.0
+  expandable_text: ^2.3.0
+  file_picker: ^5.2.0
+  flutter_easyloading: ^3.0.5
+  flutter_holo_date_picker: ^1.1.3
+  flutter_rating_bar: ^4.0.1
+  flutter_reaction_button: ^3.0.0+3
+  flutter_staggered_animations: ^1.1.1
+  flutter_svg: ^2.0.10+1
+  get: 4.6.6
+  get_storage: ^2.1.1
+  http_parser: ^4.0.2
+  #image_cropper: ^8.0.1
+  image_picker: ^1.0.7
+  interactive_viewer_2: ^0.0.10
+  intl: ^0.19.0
+  newsfeed_multiple_imageview: ^1.0.1
+  path_provider: ^2.1.3
+  photo_manager: ^3.0.0
+  reaction_button: ^0.0.7
+  readmore: ^3.0.0
+  screenshot: ^3.0.0
+  share_plus: ^9.0.0
+  shimmer: ^3.0.0
+  story: ^1.1.0
+  url_launcher: ^6.2.6
   video_player: ^2.9.2
+  #video_thumbnail: ^0.5.3
+  visibility_detector: ^0.4.0+2
+  flutter_stripe: ^11.1.0
+  flutter_widget_from_html: ^0.15.2
+  flutter_html: ^3.0.0-beta.2
+  
+  # dropdown_plus: ^0.0.9
+  # drop_down_list: ^0.0.8
+  flutter_multiselect: ^1.0.0
+  permission_handler: ^11.3.1
+  intl_phone_number_input: ^0.7.4
+  flutter_otp_text_field: ^1.2.0
+  audioplayers: ^6.1.0
+  camera: ^0.11.0+2
   percent_indicator: ^4.2.4
-  get: ^4.6.6
 
 dev_dependencies:
   flutter_test:

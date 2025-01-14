@@ -4,7 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class MyCameraController extends GetxController {
+class MyCameraController extends GetxController with WidgetsBindingObserver {
   List<CameraDescription> cameras = <CameraDescription>[];
   Rx<CameraController?> cameraController = Rx(null);
   Rx<XFile?> imageFile = Rx(null);
@@ -17,6 +17,7 @@ class MyCameraController extends GetxController {
   Rx<double> progress = 0.0.obs;
   Timer? timer;
   Rx<int> currentCameraIndex = 0.obs;
+  Rx<bool> isCameraInitialaized = Rx(false);
 
   List<double> videoSpeed = [2.0, 1.5, 1, 0.5, 0.25];
   Rx<double> selectedVideoSpeed = Rx(-1);
@@ -32,9 +33,10 @@ class MyCameraController extends GetxController {
     cameras = await availableCameras();
     cameraController.value = CameraController(
         cameras[currentCameraIndex.value], ResolutionPreset.high);
-    cameraController.value
-        ?.lockCaptureOrientation(); // ================= camera orientation lock
     await cameraController.value?.initialize();
+    await cameraController.value?.lockCaptureOrientation();
+    cameraController.refresh();
+    isCameraInitialaized.value = true;
   }
 
   Future<void> startVideoRecording() async {
@@ -133,13 +135,14 @@ class MyCameraController extends GetxController {
   void onInit() {
     super.onInit();
     isPhoto.value = true;
-
+    WidgetsBinding.instance.addObserver(this);
     initializeCamera();
   }
 
   @override
   void onClose() {
     super.onClose();
+    WidgetsBinding.instance.removeObserver(this);
     cameraController.value?.dispose();
     timer?.cancel();
   }

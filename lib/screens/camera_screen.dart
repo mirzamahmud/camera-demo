@@ -62,7 +62,7 @@ class _CameraScreenState extends State<CameraScreen> {
     _cameras = await availableCameras();
     controller =
         CameraController(_cameras[currentCameraIndex], ResolutionPreset.high);
-
+    controller?.lockCaptureOrientation();
     await controller?.initialize();
     if (mounted) {
       setState(() {});
@@ -209,11 +209,8 @@ class _CameraScreenState extends State<CameraScreen> {
             Column(
               children: [
                 Expanded(
-                  child: Transform.rotate(
-                      angle: MediaQuery.of(context).orientation ==
-                              Orientation.landscape
-                          ? 0
-                          : (-90 * 3.1415926535897932 / 180),
+                  child: RotatedBox(
+                      quarterTurns: currentCameraIndex == 1 ? 1 : 3,
                       child: CameraPreview(controller!)),
                 ),
               ],

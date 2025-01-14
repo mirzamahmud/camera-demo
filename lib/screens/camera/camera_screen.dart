@@ -1,190 +1,21 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:camera_demo/screens/camera/controller/camera_controller.dart';
 import 'package:camera_demo/screens/video_play_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
-class CameraScreen extends StatefulWidget {
+class CameraScreen extends GetView<MyCameraController> {
   const CameraScreen({super.key});
 
   @override
-  State<CameraScreen> createState() {
-    return _CameraScreenState();
-  }
-}
-
-/// Returns a suitable camera icon for [direction].
-IconData getCameraLensIcon(CameraLensDirection direction) {
-  switch (direction) {
-    case CameraLensDirection.back:
-      return Icons.camera_rear;
-    case CameraLensDirection.front:
-      return Icons.camera_front;
-    case CameraLensDirection.external:
-      return Icons.camera;
-  }
-}
-
-class _CameraScreenState extends State<CameraScreen> {
-  List<CameraDescription> _cameras = <CameraDescription>[];
-  CameraController? controller;
-  XFile? imageFile;
-  XFile? videoFile;
-  bool isShowSpeed = false;
-  bool isPhoto = false;
-  bool isFifteenSec = false;
-  bool isSixtySec = false;
-  bool isRecording = false;
-  double progress = 0.0;
-  Timer? timer;
-  int currentCameraIndex = 0;
-
-  List<double> videoSpeed = [2.0, 1.5, 1, 0.5, 0.25];
-  double selectedVideoSpeed = -1;
-
-  @override
-  void initState() {
-    super.initState();
-    isPhoto = true;
-
-    initializeCamera();
-  }
-
-  Future<void> switchCamera() async {
-    currentCameraIndex = (currentCameraIndex + 1) % (_cameras.length);
-    await controller?.dispose();
-    initializeCamera();
-  }
-
-  Future<void> initializeCamera() async {
-    _cameras = await availableCameras();
-    controller =
-        CameraController(_cameras[currentCameraIndex], ResolutionPreset.high);
-    controller?.lockCaptureOrientation();
-    await controller?.initialize();
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    controller?.dispose();
-    timer?.cancel();
-  }
-
-  // ========================== start video recording ==========================
-  Future<void> _startVideoRecording() async {
-    try {
-      await controller?.startVideoRecording();
-      setState(() {
-        isRecording = true;
-        progress = 0.0;
-      });
-
-      // Start progress timer for 15 seconds
-      timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        setState(() {
-          progress += 0.1 / 15; // Increment progress
-          if (progress >= 1.0) {
-            progress = 1.0;
-            timer.cancel();
-          }
-        });
-      });
-
-      // Stop recording after 15 seconds
-      Future.delayed(const Duration(seconds: 15), () async {
-        if (isRecording) {
-          await _stopVideoRecording();
-        }
-      });
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _startSixtySecVideoRecording() async {
-    try {
-      await controller?.startVideoRecording();
-      setState(() {
-        isRecording = true;
-        progress = 0.0;
-      });
-
-      // Start progress timer for 15 seconds
-      timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        setState(() {
-          progress += 0.1 / 60; // Increment progress
-          if (progress >= 1.0) {
-            progress = 1.0;
-            timer.cancel();
-          }
-        });
-      });
-
-      // Stop recording after 15 seconds
-      Future.delayed(const Duration(seconds: 60), () async {
-        if (isRecording) {
-          await _stopVideoRecording();
-        }
-      });
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _stopVideoRecording() async {
-    try {
-      videoFile = await controller?.stopVideoRecording();
-      setState(() {
-        isRecording = false;
-        progress = 0.0;
-        timer?.cancel();
-      });
-    } catch (e) {}
-  }
-
-  // =============================== capture photo =============================
-  Future<void> capturePhoto() async {
-    if (controller!.value.isInitialized) {
-      try {
-        final image = await controller?.takePicture();
-        setState(() {
-          imageFile = image;
-        });
-      } catch (e) {
-        debugPrint(e.toString());
-      }
-    }
-  }
-
-  // =============================== toggle flash ==============================
-  bool isFlashOn = false;
-
-  Future<void> toggleFlash() async {
-    try {
-      if (isFlashOn) {
-        await controller?.setFlashMode(FlashMode.off);
-      } else {
-        await controller?.setFlashMode(FlashMode.torch);
-      }
-      setState(() {
-        isFlashOn = !isFlashOn;
-      });
-    } catch (e) {
-      print('Error toggling flash: $e');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (controller == null || !controller!.value.isInitialized) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // if (controller.cameraController == null ||
+    //     !controller.cameraController!.value.isInitialized) {
+    //   return const Center(child: CircularProgressIndicator());
+    // }
 
     return SafeArea(
       top: false,
@@ -209,10 +40,10 @@ class _CameraScreenState extends State<CameraScreen> {
             Column(
               children: [
                 Expanded(
-                  child: RotatedBox(
-                      quarterTurns: currentCameraIndex == 1 ? 1 : 3,
-                      child: CameraPreview(controller!)),
-                ),
+                    child: (controller.cameraController == null ||
+                            !controller.cameraController!.value.isInitialized)
+                        ? const Center(child: CircularProgressIndicator())
+                        : CameraPreview(controller.cameraController!)),
               ],
             ),
             Positioned(
@@ -221,7 +52,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 alignment: Alignment.centerRight,
                 child: Row(
                   children: [
-                    isShowSpeed
+                    controller.isShowSpeed.value
                         ? Row(
                             children: [
                               Container(
@@ -231,15 +62,14 @@ class _CameraScreenState extends State<CameraScreen> {
                                     color: Colors.black45,
                                     borderRadius: BorderRadius.circular(8)),
                                 child: Column(
-                                  children:
-                                      List.generate(videoSpeed.length, (index) {
-                                    final speed = videoSpeed[index];
+                                  children: List.generate(
+                                      controller.videoSpeed.length, (index) {
+                                    final speed = controller.videoSpeed[index];
                                     return TextButton(
                                         onPressed: () {
-                                          setState(() {
-                                            selectedVideoSpeed = speed;
-                                            isShowSpeed = false;
-                                          });
+                                          controller.selectedVideoSpeed.value =
+                                              speed;
+                                          controller.isShowSpeed.value = false;
                                         },
                                         child: speed == 1.0
                                             ? const Text('Normal',
@@ -267,7 +97,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         children: [
                           IconButton(
                             onPressed: () {
-                              switchCamera();
+                              controller.switchCamera();
                             },
                             icon: const Icon(Icons.recycling,
                                 size: 20, color: Colors.white),
@@ -275,18 +105,18 @@ class _CameraScreenState extends State<CameraScreen> {
                           const SizedBox(height: 8),
                           IconButton(
                             onPressed: () {
-                              toggleFlash();
+                              controller.toggleFlash();
                             },
-                            icon: isFlashOn
+                            icon: controller.isFlashOn.value
                                 ? const Icon(Icons.flash_on_outlined,
                                     size: 20, color: Colors.amber)
                                 : const Icon(Icons.flash_off_outlined,
                                     size: 20, color: Colors.white),
                           ),
-                          isPhoto
+                          controller.isPhoto.value
                               ? const SizedBox()
                               : const SizedBox(height: 8),
-                          isPhoto
+                          controller.isPhoto.value
                               ? const SizedBox()
                               : Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -294,23 +124,25 @@ class _CameraScreenState extends State<CameraScreen> {
                                   children: [
                                     IconButton(
                                       onPressed: () {
-                                        setState(() {
-                                          isShowSpeed = !isShowSpeed;
-                                        });
+                                        controller.isShowSpeed.value =
+                                            !controller.isShowSpeed.value;
                                       },
-                                      icon: selectedVideoSpeed != -1
-                                          ? const Icon(Icons.speed_outlined,
-                                              size: 20, color: Colors.teal)
-                                          : const Icon(Icons.speed_outlined,
-                                              size: 20, color: Colors.white),
+                                      icon:
+                                          controller.selectedVideoSpeed.value !=
+                                                  -1
+                                              ? const Icon(Icons.speed_outlined,
+                                                  size: 20, color: Colors.teal)
+                                              : const Icon(Icons.speed_outlined,
+                                                  size: 20,
+                                                  color: Colors.white),
                                     ),
-                                    selectedVideoSpeed == -1
+                                    controller.selectedVideoSpeed.value == -1
                                         ? const SizedBox()
                                         : const SizedBox(height: 0),
-                                    selectedVideoSpeed == -1
+                                    controller.selectedVideoSpeed.value == -1
                                         ? const SizedBox()
                                         : Text(
-                                            '${selectedVideoSpeed}x',
+                                            '${controller.selectedVideoSpeed.value}x',
                                             textAlign: TextAlign.center,
                                             style: const TextStyle(
                                                 color: Colors.teal,
@@ -346,18 +178,17 @@ class _CameraScreenState extends State<CameraScreen> {
                   children: [
                     TextButton(
                         onPressed: () {
-                          setState(() {
-                            isSixtySec = true;
-                          });
-                          if (isSixtySec) {
-                            isFifteenSec = false;
-                            isPhoto = false;
+                          controller.isSixtySec.value = true;
+
+                          if (controller.isSixtySec.value) {
+                            controller.isFifteenSec.value = false;
+                            controller.isPhoto.value = false;
                           }
                         },
                         child: Text(
                           '60 SEC',
                           textAlign: TextAlign.center,
-                          style: isSixtySec
+                          style: controller.isSixtySec.value
                               ? const TextStyle(
                                   color: Colors.amber, fontSize: 16)
                               : const TextStyle(
@@ -365,18 +196,17 @@ class _CameraScreenState extends State<CameraScreen> {
                         )),
                     TextButton(
                         onPressed: () {
-                          setState(() {
-                            isFifteenSec = true;
-                          });
-                          if (isFifteenSec) {
-                            isSixtySec = false;
-                            isPhoto = false;
+                          controller.isFifteenSec.value = true;
+
+                          if (controller.isFifteenSec.value) {
+                            controller.isSixtySec.value = false;
+                            controller.isPhoto.value = false;
                           }
                         },
                         child: Text(
                           '15 SEC',
                           textAlign: TextAlign.center,
-                          style: isFifteenSec
+                          style: controller.isFifteenSec.value
                               ? const TextStyle(
                                   color: Colors.amber, fontSize: 16)
                               : const TextStyle(
@@ -384,18 +214,17 @@ class _CameraScreenState extends State<CameraScreen> {
                         )),
                     TextButton(
                         onPressed: () {
-                          setState(() {
-                            isPhoto = true;
-                          });
-                          if (isPhoto) {
-                            isSixtySec = false;
-                            isFifteenSec = false;
+                          controller.isPhoto.value = true;
+
+                          if (controller.isPhoto.value) {
+                            controller.isSixtySec.value = false;
+                            controller.isFifteenSec.value = false;
                           }
                         },
                         child: Text(
                           'PHOTO',
                           textAlign: TextAlign.center,
-                          style: isPhoto
+                          style: controller.isPhoto.value
                               ? const TextStyle(
                                   color: Colors.amber, fontSize: 16)
                               : const TextStyle(
@@ -405,7 +234,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
                 const SizedBox(height: 20),
                 // ================= capture button ============================
-                isPhoto
+                controller.isPhoto.value
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -420,7 +249,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                     padding: const EdgeInsets.only(left: 32),
                                     child: GestureDetector(
                                       onTap: () {
-                                        capturePhoto();
+                                        controller.capturePhoto();
                                       },
                                       child: Container(
                                         height: 64,
@@ -432,10 +261,10 @@ class _CameraScreenState extends State<CameraScreen> {
                                       ),
                                     ),
                                   ),
-                                  imageFile == null
+                                  controller.imageFile.value == null
                                       ? const SizedBox()
                                       : const SizedBox(width: 32),
-                                  imageFile == null
+                                  controller.imageFile.value == null
                                       ? const SizedBox()
                                       : Container(
                                           height: 60,
@@ -447,8 +276,9 @@ class _CameraScreenState extends State<CameraScreen> {
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                               image: DecorationImage(
-                                                  image: FileImage(
-                                                      File(imageFile!.path)),
+                                                  image: FileImage(File(
+                                                      controller.imageFile
+                                                          .value!.path)),
                                                   fit: BoxFit.cover)),
                                         )
                                 ],
@@ -464,14 +294,15 @@ class _CameraScreenState extends State<CameraScreen> {
                               child: CircularPercentIndicator(
                                 radius: 40.0,
                                 lineWidth: 5.0,
-                                percent: progress,
+                                percent: controller.progress.value,
                                 progressColor: Colors.red,
                                 center: GestureDetector(
                                   onTap: () async {
-                                    if (isFifteenSec) {
-                                      await _startVideoRecording();
+                                    if (controller.isFifteenSec.value) {
+                                      await controller.startVideoRecording();
                                     } else {
-                                      await _startSixtySecVideoRecording();
+                                      await controller
+                                          .startSixtySecVideoRecording();
                                     }
                                   },
                                   child: Container(
@@ -486,7 +317,7 @@ class _CameraScreenState extends State<CameraScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          videoFile == null
+                          controller.videoFile.value == null
                               ? const SizedBox()
                               : IconButton(
                                   onPressed: () {
@@ -494,9 +325,11 @@ class _CameraScreenState extends State<CameraScreen> {
                                         context,
                                         MaterialPageRoute(
                                             builder: (_) => VideoPlayScreen(
-                                                videoSpeed: selectedVideoSpeed,
-                                                videoSrc:
-                                                    videoFile?.path ?? '')));
+                                                videoSpeed: controller
+                                                    .selectedVideoSpeed.value,
+                                                videoSrc: controller.videoFile
+                                                        .value?.path ??
+                                                    '')));
                                   },
                                   icon: Container(
                                     height: 24,

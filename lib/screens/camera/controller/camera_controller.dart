@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 
 class MyCameraController extends GetxController {
   List<CameraDescription> cameras = <CameraDescription>[];
-  CameraController? cameraController;
+  Rx<CameraController?> cameraController = Rx(null);
   Rx<XFile?> imageFile = Rx(null);
   Rx<XFile?> videoFile = Rx(null);
   Rx<bool> isShowSpeed = false.obs;
@@ -24,23 +24,22 @@ class MyCameraController extends GetxController {
   Future<void> switchCamera() async {
     currentCameraIndex.value =
         (currentCameraIndex.value + 1) % (cameras.length);
-    cameraController?.dispose();
+    cameraController.value?.dispose();
     initializeCamera();
   }
 
   Future<void> initializeCamera() async {
     cameras = await availableCameras();
-    cameraController = CameraController(
+    cameraController.value = CameraController(
         cameras[currentCameraIndex.value], ResolutionPreset.high);
-    cameraController
+    cameraController.value
         ?.lockCaptureOrientation(); // ================= camera orientation lock
-    cameraController.mediaSettings.
-    await cameraController?.initialize();
+    await cameraController.value?.initialize();
   }
 
   Future<void> startVideoRecording() async {
     try {
-      await cameraController?.startVideoRecording();
+      await cameraController.value?.startVideoRecording();
 
       isRecording.value = true;
       progress.value = 0.0;
@@ -67,7 +66,7 @@ class MyCameraController extends GetxController {
 
   Future<void> startSixtySecVideoRecording() async {
     try {
-      await cameraController?.startVideoRecording();
+      await cameraController.value?.startVideoRecording();
 
       isRecording.value = true;
       progress.value = 0.0;
@@ -94,7 +93,7 @@ class MyCameraController extends GetxController {
 
   Future<void> stopVideoRecording() async {
     try {
-      videoFile.value = await cameraController?.stopVideoRecording();
+      videoFile.value = await cameraController.value?.stopVideoRecording();
 
       isRecording.value = false;
       progress.value = 0.0;
@@ -103,9 +102,9 @@ class MyCameraController extends GetxController {
   }
 
   Future<void> capturePhoto() async {
-    if (cameraController!.value.isInitialized) {
+    if (cameraController.value!.value.isInitialized) {
       try {
-        final image = await cameraController?.takePicture();
+        final image = await cameraController.value?.takePicture();
 
         imageFile.value = image;
       } catch (e) {
@@ -119,9 +118,9 @@ class MyCameraController extends GetxController {
   Future<void> toggleFlash() async {
     try {
       if (isFlashOn.value) {
-        await cameraController?.setFlashMode(FlashMode.off);
+        await cameraController.value?.setFlashMode(FlashMode.off);
       } else {
-        await cameraController?.setFlashMode(FlashMode.torch);
+        await cameraController.value?.setFlashMode(FlashMode.torch);
       }
 
       isFlashOn.value = !isFlashOn.value;
@@ -141,7 +140,7 @@ class MyCameraController extends GetxController {
   @override
   void onClose() {
     super.onClose();
-    cameraController?.dispose();
+    cameraController.value?.dispose();
     timer?.cancel();
   }
 }

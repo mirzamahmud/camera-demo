@@ -12,11 +12,6 @@ class CameraScreen extends GetView<MyCameraController> {
 
   @override
   Widget build(BuildContext context) {
-    // if (controller.cameraController == null ||
-    //     !controller.cameraController!.value.isInitialized) {
-    //   return const Center(child: CircularProgressIndicator());
-    // }
-
     return SafeArea(
       top: false,
       child: Scaffold(
@@ -37,15 +32,14 @@ class CameraScreen extends GetView<MyCameraController> {
         body: Stack(
           alignment: Alignment.center,
           children: [
-            Column(
-              children: [
-                Expanded(
-                    child: (controller.cameraController == null ||
-                            !controller.cameraController!.value.isInitialized)
-                        ? const Center(child: CircularProgressIndicator())
-                        : CameraPreview(controller.cameraController!)),
-              ],
-            ),
+            Obx(() {
+              return Column(
+                children: [
+                  Expanded(
+                      child: CameraPreview(controller.cameraController.value!)),
+                ],
+              );
+            }),
             Positioned(
               right: 16,
               child: Align(
